@@ -6,6 +6,7 @@ library(plotly)
 library(shinyFiles)
 library(DBI)
 library(RSQLite)
+library(jsonlite)
 
 
 

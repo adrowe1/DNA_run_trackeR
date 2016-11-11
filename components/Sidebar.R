@@ -8,7 +8,7 @@ componentSidebar <- dashboardSidebar(
   sidebarMenu(
     id = "tabs",
     sidebarMenuOutput("menuImport"),
-    menuItem("Menu item", icon = icon("calendar"))
+    menuItem("Housekeeping", icon = icon("cubes"))
   ),
 
   ## Raw data directory choice -------
