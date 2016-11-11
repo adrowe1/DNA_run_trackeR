@@ -7,6 +7,9 @@ library(shinyFiles)
 library(DBI)
 library(RSQLite)
 library(jsonlite)
+library(magrittr)
+library(stringr)
+library(lubridate)
 
 
 
@@ -55,3 +58,9 @@ if (initializeDB){
   dbDisconnect(con)
 
 }
+
+
+## FUNCTIONS -----------------------------
+
+
+
