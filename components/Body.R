@@ -8,8 +8,11 @@ componentBody <- dashboardBody(
     ## Import tab ------------------
     tabItem(tabName = "import",
             fluidRow(
-              box(width = 6, title = "Choose file to import", solidHeader = TRUE, background = "black",
-                  selectizeInput("importableFiles", label = "", choices = NULL, selected = NULL)
+              box(width = 8, height = "100px", title = "Choose file to import", solidHeader = TRUE, background = "black",
+                  selectizeInput("importableFiles", label = NULL, choices = NULL, selected = NULL)
+              ),
+              box(width = 4, height = "100px", title = "Import", solidHeader = TRUE, background = "black",
+                  actionButton("buttonImport", "Import", icon = icon("import"))
               )
             ),
             fluidRow(

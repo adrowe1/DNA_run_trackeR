@@ -3,6 +3,15 @@
 
 server <- function(session, input, output) {
 
+
+  ## REACTIVE VALUES ---------------
+
+  store <- reactiveValues()
+
+
+  ## END REACTIVE VALUES
+
+
   ## INPUTS ------------------------
 
   volumes <- getVolumes()
@@ -33,6 +42,24 @@ server <- function(session, input, output) {
 
   ## PROCESS ---------------------
 
+  # already imported files from reactive poll
+  alreadyImported <- reactivePoll(2000, session,
+                                      # check function - in this case use the same thing, as the value func is cheap
+                                      checkFunc = function() {
+                                        con <- dbConnect(SQLite(), dbCon())
+                                        alreadyImported <- dbGetQuery(conn=con, "SELECT checksum FROM import_record")
+                                        dbDisconnect(con)
+                                        alreadyImported
+                                      },
+                                      # This function returns the values
+                                      valueFunc = function() {
+                                        con <- dbConnect(SQLite(), dbCon())
+                                        alreadyImported <- dbGetQuery(conn=con, "SELECT checksum FROM import_record")
+                                        dbDisconnect(con)
+                                        alreadyImported
+                                      }
+    )
+
   # files which can be imported
   filesToImport <- reactive({
     # If no directory selected, pass a NULL
@@ -44,20 +71,11 @@ server <- function(session, input, output) {
     files <- data_frame(path=list.files(basePath, recursive = TRUE, pattern = ".json"),
                         checksum=list.files(basePath, recursive = TRUE, full.names = TRUE, pattern = ".json") %>% tools::md5sum())
 
-    # exclude any files with checksums already in database
-    con <- dbConnect(SQLite(), dbCon())
-    alreadyImported <- dbGetQuery(conn=con, "SELECT checksum FROM import_record")
-
-    cat(dim(files), "\n")
-    cat(dim(alreadyImported), "\n")
-    cat(dim(files %>% anti_join(., alreadyImported)), "\n")
-
-
     # return data frame of file paths and checksums
-    files %>% anti_join(., alreadyImported)
+    files %>% anti_join(., alreadyImported())
   })
 
-  # parse a filename for DB write
+  # parse a filename for DB write FIXME - make robust against files with incomplete naming convention - require manual input in modal?
   importRecord <- reactive({
     if (is.null(input$importableFiles))
       return(NULL)
@@ -87,6 +105,32 @@ server <- function(session, input, output) {
     # output a data frame
     bind_cols(firstCol, values) %>% mutate(checksum = tools::md5sum(filename),
                                            filename = basename(filename))
+  })
+
+
+  # read currently selected data file into a reactive value
+  observeEvent(input$importableFiles, {
+    if (is.null(filesToImport()))
+      return(NULL)
+    path <- filesToImport() %>% filter(str_detect(path, input$importableFiles)) %>% extract2("path")
+    # read data in from JSON file
+    tmp <- fromJSON(file.path(parseDirPath(volumes(), input$dataDir), path))
+    # add checksum column
+    tmp$checksum <- tools::md5sum(file.path(parseDirPath(volumes(), input$dataDir), path))
+    # rearrange cols
+    store$currentDataset <- tmp[,c(11, 1:10)]
+  })
+
+  # on button click write data to DB
+  observeEvent(input$buttonImport, {
+    # db connection
+    my_db <- src_sqlite("./data/imported.sqlite", create = FALSE)
+    # dplyr shortcut to append all raw data to raw data table
+    db_insert_into( con = my_db$con, table = "raw_data", values = store$currentDataset)
+    # dplyr shortcut to append import details to import record table
+    db_insert_into( con = my_db$con, table = "import_record", values = importRecord())
+
+
   })
 
 
@@ -152,7 +196,8 @@ server <- function(session, input, output) {
 
 
   output$tmp <- renderDataTable({
-    importRecord()
+    # importRecord()
+    store$currentDataset
   })
 
   ## END OUTPUTS
