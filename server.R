@@ -166,7 +166,7 @@ server <- function(session, input, output) {
 
   ## OUTPUTS ---------------------
 
-  # Sidebar
+  # Sidebar import menu
   output$menuImport <- renderMenu({
     # If no directory selected, don't show menu
     if (is.null(filesToImport()))
@@ -180,6 +180,23 @@ server <- function(session, input, output) {
                badgeLabel = numFiles, badgeColor = ifelse(numFiles>0, "green", "navy"))
     )
   })
+
+  # Sidebar tuning menu
+  output$menuTuning <- renderMenu({
+    # if nothing in database don't show menu
+    if (nrow(alreadyImported()) == 0)
+      return(NULL)
+
+    sidebarMenu(
+      menuItem("Tune data", icon = icon("compass"), tabName = "tuning",
+               badgeLabel = nrow(alreadyImported()), badgeColor = ifelse(nrow(alreadyImported())>0, "green", "navy"))
+    )
+  })
+
+
+
+  # Sidebar analyse menu
+
 
   output$sidebarButton <- renderUI({
     column(width = 12, offset = 0,
@@ -198,6 +215,16 @@ server <- function(session, input, output) {
   output$tmp <- renderDataTable({
     # importRecord()
     store$currentDataset
+  })
+
+  output$currentImportPlot <- renderPlot({
+
+    store$currentDataset %>%
+      ggplot(aes(x = `x [nm]`, y = `y [nm]`, alpha = `intensity [photon]`, colour= `frame` )) +
+      scale_color_gradient(low = "#ff4023", high = "#2386ff") +
+      geom_point() +
+      coord_fixed(ratio = 1) +
+      theme_bw()
   })
 
   ## END OUTPUTS

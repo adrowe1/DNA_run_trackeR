@@ -8,6 +8,7 @@ componentSidebar <- dashboardSidebar(
   sidebarMenu(
     id = "tabs",
     sidebarMenuOutput("menuImport"),
+    sidebarMenuOutput("menuTuning"),
     menuItem("Housekeeping", icon = icon("cubes"))
   ),
 
