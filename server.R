@@ -14,13 +14,14 @@ server <- function(session, input, output) {
 
   ## INPUTS ------------------------
 
-  volumes <- getVolumes()
+  # volumes <- getVolumes()
+  windowsPath <- "C:/..."
 
   # input component for selecting a directory containing raw data
-  shinyDirChoose(input, "dataDir", root=volumes(), session=session, filetypes=c("", "json"))
+  shinyDirChoose(input, "dataDir", root=windowsPath, session=session, filetypes=c("", "json"))
 
   # input component for selecting a database file containing imported data
-  shinyFileChoose(input, "analysisFile", root=volumes(), session=session, filetypes=c("", "sqlite")) # FIXME root failing
+  shinyFileChoose(input, "analysisFile", root=windowsPath, session=session, filetypes=c("", "sqlite")) # FIXME root failing
 
   ## END INPUTS
 
@@ -66,7 +67,7 @@ server <- function(session, input, output) {
     if (is.null(input$dataDir))
       return(NULL)
     # else get selected path
-    basePath <- parseDirPath(volumes(), input$dataDir)
+    basePath <- parseDirPath(windowsPath, input$dataDir)
     # then list all json files in path and make a data frame with checksums
     files <- data_frame(path=list.files(basePath, recursive = TRUE, pattern = ".json"),
                         checksum=list.files(basePath, recursive = TRUE, full.names = TRUE, pattern = ".json") %>% tools::md5sum())
@@ -85,10 +86,11 @@ server <- function(session, input, output) {
 
 
 
-    firstCol <- file.path(parseDirPath(volumes(), input$dataDir), tmp[str_detect(tmp, input$importableFiles)]) %>%
+    firstCol <- file.path(parseDirPath(windowsPath, input$dataDir), tmp[str_detect(tmp, input$importableFiles)]) %>%
       as_data_frame() %>%
       set_colnames("filename")
 
+    ## FIXME - parse to remove problem characters first ie errant parentheses etc
     values <- input$importableFiles %>%
       basename %>%
       str_split_fixed(pattern = "_", n = 8) %>%
@@ -114,9 +116,9 @@ server <- function(session, input, output) {
       return(NULL)
     path <- filesToImport() %>% filter(str_detect(path, input$importableFiles)) %>% extract2("path")
     # read data in from JSON file
-    tmp <- fromJSON(file.path(parseDirPath(volumes(), input$dataDir), path))
+    tmp <- fromJSON(file.path(parseDirPath(windowsPath, input$dataDir), path))
     # add checksum column
-    tmp$checksum <- tools::md5sum(file.path(parseDirPath(volumes(), input$dataDir), path))
+    tmp$checksum <- tools::md5sum(file.path(parseDirPath(windowsPath, input$dataDir), path))
     # rearrange cols
     store$currentDataset <- tmp[,c(11, 1:10)]
   })
